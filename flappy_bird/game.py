@@ -11,13 +11,13 @@ from flappy_bird.actor import Actor
 
 WHITE = (255, 255, 255)
 H_SPEED = -8
-UP_V_SPEED = -10
+UP_V_SPEED = -15
 MAX_V_SPEED = 15
 
 SCREEN_H = 600
 SCREEN_W = 600
-PIPE_GAP = 200
-PIPE_DISTANCE = 300
+PIPE_GAP = 150
+PIPE_DISTANCE = 500
 
 pipe_rand = random.Random(10)
 
@@ -70,6 +70,8 @@ class Bird(pygame.sprite.Sprite):
         t_h = self.rect.top - pipe.upper.rect.bottom
         b_h = pipe.bottom.rect.top - self.rect.bottom
         to_pipe = pipe.upper.rect.x - self.rect.right
+        if to_pipe < 0:
+            to_pipe = pipe.upper.rect.right - self.rect.left
         if self.actor.is_up(t_h, b_h, self.__v_speed, to_pipe):
             self.__v_speed = UP_V_SPEED
         else:
@@ -132,7 +134,7 @@ class FlappyBirdGame(object):
                 del pipes[0]
 
             for bird in birds:
-                if pipes[0].upper.rect.left >= bird.rect.right:
+                if pipes[0].upper.rect.right >= bird.rect.left:
                     bird.move(pipes[0])
                 else:
                     bird.move(pipes[1])
@@ -176,11 +178,10 @@ def model_to_string(model: ai.Model):
 def start_learning():
     game = FlappyBirdGame()
 
-    m1 = ai.Model()
-
-    m2 = ai.Model()
-
-    ai.finished__generation = [m1, m2]
+    game.start(ai.base_generation())
+    print(f"Generation 0:")
+    print(f"1. {model_to_string(ai.finished__generation[-1])}")
+    print(f"2. {model_to_string(ai.finished__generation[-2])}")
 
     generation = 1
     while True:

@@ -7,7 +7,7 @@ from torch import nn, FloatTensor, sigmoid, Tensor
 
 from flappy_bird.actor import Actor
 
-POPULATION_SIZE = 200
+POPULATION_SIZE = 32
 
 
 class Model(nn.Module):
@@ -92,6 +92,13 @@ def new_generation():
     g222 = generate_pack(bias, torch.hstack((p2_l, p2_h)))
 
     return list(set().union(g111, g112, g121, g122, g211, g212, g221, g222))
+
+
+def base_generation():
+    res = []
+    for i in range(POPULATION_SIZE):
+        res.append(Model())
+    return res
 
 
 if __name__ == '__main__':
