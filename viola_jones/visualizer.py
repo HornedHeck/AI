@@ -13,3 +13,8 @@ def show_faced(image: nmp.ndarray, rect: iter, real_rect: iter = None):
                          facecolor='none')
         ax.add_patch(rect)
     plt.show()
+
+
+def show_image(data: nmp.ndarray):
+    plt.imshow(data)
+    plt.show()
