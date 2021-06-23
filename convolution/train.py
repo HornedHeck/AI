@@ -30,7 +30,7 @@ test_loader = DataLoader(
           ])),
     batch_size=batch_size, shuffle=True)
 
-device = torch.device("cuda:0")
+device = torch.device("cpu")
 
 epochs = 10
 model = model.get_model().to(device)
@@ -38,7 +38,7 @@ model = model.get_model().to(device)
 base_path = '../models/'
 os.makedirs(os.path.dirname(base_path), exist_ok=True)
 
-optimizer = Adam(model.parameters(), 0.00001)
+optimizer = Adam(model.parameters(), 0.0001)
 # optimizer = torch.optim.SGD(model.parameters(), 0.01)
 loss = torch.nn.NLLLoss()
 
