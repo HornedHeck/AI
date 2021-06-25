@@ -1,6 +1,6 @@
-/dataset/faces/
 /dataset/MNIST/
 /dataset/cats/
-/dataset/cifar-10-batches-py/
 /dataset/music/test_data
 /dataset/music/train_data
+/dataset/Anime/
+/.idea/vcs.xml

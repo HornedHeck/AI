@@ -77,13 +77,13 @@ def add_empty():
 
 def add_faces():
     downloads_path = '/home/hornedheck/Загрузки/faced/'
-    cls = cv2.CascadeClassifier('/home/hornedheck/PycharmProjects/AI/cascades/anime_v1.xml')
+    cls = cv2.CascadeClassifier('/home/hornedheck/PycharmProjects/AI/models/anime_v2.xml')
     info = []
     counter = len(os.listdir(f'{path}d_faces/')) + 1
     for file in os.listdir(downloads_path):
         img = cv2.imread(f'{downloads_path}{file}', cv2.IMREAD_UNCHANGED)
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        faces = cls.detectMultiScale(gray, 1.05, 1)
+        faces = cls.detectMultiScale(gray, 1.1, 1)
         for (x, y, w, h) in faces:
             face = img[y:y + h + 1, x:x + w + 1]
             info.append(f'd_faces/face_{counter}.png')
@@ -94,4 +94,5 @@ def add_faces():
         print(i)
 
 
-create_info()
+if __name__ == '__main__':
+    create_info()
