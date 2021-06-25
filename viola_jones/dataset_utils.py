@@ -17,6 +17,16 @@ def grayscale(data: nmp.ndarray) -> nmp.ndarray:
     return res
 
 
+def to_integral(src: nmp.ndarray) -> nmp.ndarray:
+    res = nmp.zeros(src.shape)
+    for i in range(res.shape[0]):
+        for j in range(res.shape[1]):
+            res[i, j] = src[i, j] + res[i - 1, j] + res[i, j - 1]
+            if j > 0:
+                res[i, j] -= res[i - 1, j - 1]
+    return res
+
+
 def get_photos(src_path: str) -> nmp.ndarray:
     return nmp.array([grayscale(plt.imread(src_path + photo)) for photo in os.listdir(src_path)])
 
@@ -25,7 +35,7 @@ def get_data():
     faces = get_photos(faces_path)
     empty = get_photos(empty_path)
     return nmp.vstack((faces, empty)), nmp.hstack(
-        (nmp.ones(faces.shape[0], dtype=int), nmp.zeros(empty.shape[0], dtype=int)))
+        (nmp.ones(faces.shape[0], dtype=int), -nmp.ones(empty.shape[0], dtype=int)))
 
 
 def showcase():
