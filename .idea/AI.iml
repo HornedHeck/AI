@@ -6,11 +6,10 @@
       <excludeFolder url="file://$MODULE_DIR$/dataset/music/test_data" />
       <excludeFolder url="file://$MODULE_DIR$/dataset/music/train_data" />
       <excludeFolder url="file://$MODULE_DIR$/dataset/MNIST" />
+      <excludeFolder url="file://$MODULE_DIR$/dataset/Anime" />
+      <excludeFolder url="file://$MODULE_DIR$/dataset/music" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-  </component>
-  <component name="PyDocumentationSettings">
-    <option name="renderExternalDocumentation" value="true" />
   </component>
 </module>

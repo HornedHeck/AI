@@ -1,143 +1,60 @@
 from __future__ import print_function
 
 import csv
-import errno
 import os
 import os.path
-import pickle
-from subprocess import call
 
+import numpy as nmp
 import torch.utils.data as data
-from intervaltree import IntervalTree
-from scipy.io import wavfile
-
-sz_float = 4  # size of a float
-epsilon = 10e-8  # fudge factor for normalization
+from torch.utils.data.dataset import T_co
 
 
+# todo delta_start to classes
+# todo duration to classes:
 class MusicNet(data.Dataset):
-    """`MusicNet <http://homes.cs.washington.edu/~thickstn/musicnet.html>`_ Dataset.
-    Args:
-        root (string): Root directory of dataset
-        train (bool, optional): If True, creates dataset from ``train_data``,
-            otherwise from ``test_data``.
-        download (bool, optional): If true, downloads the dataset from the internet and
-            puts it in root directory. If dataset is already downloaded, it is not
-            downloaded again.
-        mmap (bool, optional): If true, mmap the dataset for faster access times.
-        normalize (bool, optional): If true, rescale input vectors to unit norm.
-        window (int, optional): Size in samples of a data point.
-        pitch_shift (int,optional): Integral pitch-shifting transformations.
-        jitter (int, optional): Continuous pitch-jitter transformations.
-        epoch_size (int, optional): Designated Number of samples for an "epoch"
-    """
     url = 'https://homes.cs.washington.edu/~thickstn/media/musicnet.tar.gz'
     raw_folder = 'raw'
-    train_data, train_labels, train_tree = 'train_data', 'train_labels', 'train_tree.pckl'
-    test_data, test_labels, test_tree = 'test_data', 'test_labels', 'test_tree.pckl'
-    extracted_folders = [train_data, train_labels, test_data, test_labels]
+    train_labels = 'train_labels'
+    test_labels = 'test_labels'
+    note_len = 95
+    note_struct_len = note_len + 2
+    note_offset = 10
 
-    def __init__(self, root, train=True, download=False, refresh_cache=False):
-        self.refresh_cache = refresh_cache
-        self.m = 128
+    @staticmethod
+    def note_to_one_hot(note: int):
+        zeros = nmp.zeros(MusicNet.note_len, dtype=float)
+        zeros[note - MusicNet.note_offset] = 1.
+        return zeros
 
-        self.root = os.path.expanduser(root)
-
-        if download:
-            self.download()
-
-        if not self._check_exists():
-            raise RuntimeError('Dataset not found. You can use download=True to download it')
-
+    def __init__(self, root, train=True, batch_size: int = 250, transforms=None):
+        self.root = root
+        self.transforms = transforms
+        self.batch_size = batch_size
+        self.note_length = 95
+        self.note_offset = 10
+        self.notes = dict()
         if train:
-            self.data_path = os.path.join(self.root, self.train_data)
-            labels_path = os.path.join(self.root, self.train_labels, self.train_tree)
+            labels_path = os.path.join(self.root, self.train_labels)
         else:
-            self.data_path = os.path.join(self.root, self.test_data)
-            labels_path = os.path.join(self.root, self.test_labels, self.test_tree)
+            labels_path = os.path.join(self.root, self.test_labels)
 
-        with open(labels_path, 'rb') as f:
-            self.labels = pickle.load(f)
+        self.labels = self.process_labels(labels_path)
 
-        self.rec_ids = list(self.labels.keys())
-        self.records = dict()
-        self.open_files = []
+    def __getitem__(self, index) -> T_co:
+        item = self.labels[:, index]
+        return item[0], item[1]
 
-    def _check_exists(self):
-        return os.path.exists(os.path.join(self.root, self.train_data)) and \
-               os.path.exists(os.path.join(self.root, self.test_data)) and \
-               os.path.exists(os.path.join(self.root, self.train_labels, self.train_tree)) and \
-               os.path.exists(os.path.join(self.root, self.test_labels, self.test_tree)) and \
-               not self.refresh_cache
+    def __len__(self):
+        return self.labels.shape[1] // self.batch_size * self.batch_size
 
-    def download(self):
-        """Download the MusicNet data if it doesn't exist in ``raw_folder`` already."""
-        from six.moves import urllib
-
-        if self._check_exists():
-            return
-
-        # download files
-        try:
-            os.makedirs(os.path.join(self.root, self.raw_folder))
-        except OSError as e:
-            if e.errno == errno.EEXIST:
-                pass
-            else:
-                raise
-
-        filename = self.url.rpartition('/')[2]
-        file_path = os.path.join(self.root, self.raw_folder, filename)
-        if not os.path.exists(file_path):
-            print('Downloading ' + self.url)
-            data = urllib.request.urlopen(self.url)
-            with open(file_path, 'wb') as f:
-                # stream the download to disk (it might not fit in memory!)
-                while True:
-                    chunk = data.read(16 * 1024)
-                    if not chunk:
-                        break
-                    f.write(chunk)
-
-        if not all(map(lambda f: os.path.exists(os.path.join(self.root, f)), self.extracted_folders)):
-            print('Extracting ' + filename)
-            if call(["tar", "-xf", file_path, '-C', self.root, '--strip', '1']) != 0:
-                raise OSError("Failed tarball extraction")
-
-        # process and save as torch files
-        print('Processing...')
-
-        self.process_data(self.test_data)
-
-        trees = self.process_labels(self.test_labels)
-        with open(os.path.join(self.root, self.test_labels, self.test_tree), 'wb') as f:
-            pickle.dump(trees, f)
-
-        self.process_data(self.train_data)
-
-        trees = self.process_labels(self.train_labels)
-        with open(os.path.join(self.root, self.train_labels, self.train_tree), 'wb') as f:
-            pickle.dump(trees, f)
-
-        self.refresh_cache = False
-        print('Download Complete')
-
-    # write out wavfiles as arrays for direct mmap access
-    def process_data(self, path):
-        for item in os.listdir(os.path.join(self.root, path)):
-            if not item.endswith('.wav'): continue
-            uid = int(item[:-4])
-            _, data = wavfile.read(os.path.join(self.root, path, item))
-            data.tofile(os.path.join(self.root, path, item[:-4] + '.bin'))
-
-    # wite out labels in intervaltrees for fast access
     def process_labels(self, path):
         trees = dict()
-        for item in os.listdir(os.path.join(self.root, path)):
-            if not item.endswith('.csv'): continue
+        for item in os.listdir(path):
+            if not item.endswith('.csv'):
+                continue
             uid = int(item[:-4])
-            tree = IntervalTree()
-            with open(os.path.join(self.root, path, item), 'r') as f:
+            track = []
+            with open(os.path.join(path, item), 'r') as f:
                 reader = csv.DictReader(f, delimiter=',')
                 for label in reader:
                     start_time = int(label['start_time'])
@@ -147,10 +64,26 @@ class MusicNet(data.Dataset):
                     start_beat = float(label['start_beat'])
                     end_beat = float(label['end_beat'])
                     note_value = label['note_value']
-                    tree[start_time:end_time] = (instrument, note, start_beat, end_beat, note_value)
-            trees[uid] = tree
-        return trees
+                    if note_value not in self.notes.keys():
+                        self.notes[note_value] = set()
+                    self.notes[note_value].add(end_beat)
+                    track.append((
+                        # start_time, end_time, instrument,
+                        start_beat, end_beat, *self.note_to_one_hot(note)
+                    ))
+            track = nmp.array(track)
+            track[:-1, 0] = track[1:, 0] - track[:-1, 0]
+            track = track[nmp.logical_and(track[:, 0] <= 4., track[:, 1] <= 4.)]
+            track[track[:, 0] < 0., 0] = 0.
+            trees[uid] = track[:len(track) // self.batch_size * self.batch_size + 1]
+        return nmp.concatenate(tuple((notes[:-1], notes[1:]) for notes in trees.values()), axis=1)
 
 
+# max = 104
+# min = 21
+# used_min = 10
 if __name__ == '__main__':
-    MusicNet('../dataset/music/', train=True, download=True)
+    dataset = MusicNet('../dataset/music/', train=True)
+    print(nmp.unique(dataset.labels[:, :, 0]))
+    # for k in dataset.notes.keys():
+    #     print(f'{k}: {dataset.notes[k]}')
