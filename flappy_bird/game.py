@@ -3,6 +3,7 @@ import random
 import sys
 
 import pygame
+import torch
 from pygame.locals import *
 from pygame.sprite import AbstractGroup, Group, Sprite
 
@@ -218,5 +219,6 @@ def start_showcase():
 if __name__ == '__main__':
     pygame.init()
 
-    start_learning()
+    with torch.no_grad():
+        start_learning()
     # init start parents
