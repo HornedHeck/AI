@@ -5,7 +5,7 @@ from torch.nn import Embedding, LSTM, Sequential
 from base.BaseModel import BaseModel
 
 
-# note, len, offset, instrument
+# note, len, offset
 class MRNN(BaseModel):
 
     def __init__(
@@ -13,7 +13,6 @@ class MRNN(BaseModel):
             note_classes: int,
             len_classes: int,
             offset_classes: int,
-            instrument_classes: int,
             minibatch_size: int
     ):
         super().__init__()
@@ -21,18 +20,16 @@ class MRNN(BaseModel):
         self.note_classes = note_classes
         self.len_classes = len_classes
         self.offset_classes = offset_classes
-        self.instrument_classes = instrument_classes
 
         self.__loss = nn.CrossEntropyLoss()
         self.minibatch_size = minibatch_size
 
         self.lstm_multiplier = 2
-        self.base_size = (note_classes + len_classes + offset_classes + instrument_classes)
+        self.base_size = (note_classes + len_classes + offset_classes)
         self.lstm_size = self.base_size * self.lstm_multiplier
         self.note_embedding = Embedding(note_classes, note_classes * self.lstm_multiplier)
         self.len_embedding = Embedding(len_classes, len_classes * self.lstm_multiplier)
         self.offset_embedding = Embedding(offset_classes, offset_classes * self.lstm_multiplier)
-        self.instr_embedding = Embedding(instrument_classes, instrument_classes * self.lstm_multiplier)
 
         self.lstm = LSTM(self.lstm_size, self.lstm_size)
 
@@ -48,8 +45,7 @@ class MRNN(BaseModel):
         note_e = self.note_embedding(x[:, 0])
         size_e = self.len_embedding(x[:, 1])
         offset_e = self.offset_embedding(x[:, 2])
-        inst_e = self.instr_embedding(x[:, 3])
-        return torch.cat((note_e, size_e, offset_e, inst_e), 1)
+        return torch.cat((note_e, size_e, offset_e), 1)
 
     def forward(self, x: Tensor, hc: tuple[Tensor]):
         x = self.embed(x)
@@ -83,14 +79,9 @@ class MRNN(BaseModel):
         end += self.offset_classes
         offset_error = self.__loss(
             r[:, start:end], y[:, 2]
-        ) * 2
-        start = end
-        end += self.instrument_classes
-        instr_error = self.__loss(
-            r[:, start:end], y[:, 3]
         )
 
-        return note_error + size_error + offset_error + instr_error
+        return note_error  # + size_error + offset_error
 
     def is_correct(self, r: Tensor, y: Tensor) -> int:
         start = 0
@@ -102,16 +93,13 @@ class MRNN(BaseModel):
         start = end
         end += self.offset_classes
         offsets = r[:, start:end].argmax(1)
-        start = end
-        end += self.instrument_classes
-        instruments = r[:, start:end].argmax(1)
 
-        r = torch.stack((notes, sizes, offsets, instruments), 1)
+        r = torch.stack((notes, sizes, offsets), 1)
         y = y.view(r.shape)
 
         correct = 0
         for y_row, r_row in zip(y, r):
-            correct += (y_row == r_row).all().item()
+            correct += (y_row[0] == r_row[0])  # .all().item()
 
         return correct
 

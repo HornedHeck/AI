@@ -82,7 +82,7 @@ class MusicNet(data.Dataset):
         for row in raw:
             row[:, 1] = nmp.array([self.get_size_class(s) for s in row[:, 1]])
             row[:, 2] = nmp.array([self.get_start_class(s) for s in row[:, 2]])
-            row[:, 3] = nmp.array([self.get_instr_class(s) for s in row[:, 3]])
+            # row[:, 3] = nmp.array([self.get_instr_class(s) for s in row[:, 3]])
             row = row.astype(int)
             s_idx = (row.shape[0] - 1) // self.seq_len * self.seq_len + 1
             for i in range(s_idx - self.seq_len - 1):
@@ -115,7 +115,12 @@ class MusicNet(data.Dataset):
                     end_beat = float(label['end_beat'])
                     # note_value = label['note_value']
                     track.append(
-                        [note, end_beat, start_beat, instrument]
+                        [
+                            note,
+                            end_beat,
+                            start_beat,
+                            # instrument
+                        ]
                     )
             track = nmp.array(track)
             track[:-1, 2] = track[1:, 2] - track[:-1, 2]
@@ -127,4 +132,5 @@ class MusicNet(data.Dataset):
 # min = 21
 # used_min = 10
 if __name__ == '__main__':
-    dataset = MusicNet('/home/hornedheck/PycharmProjects/AI/dataset/music/', 10, train=True, fast_load=True)
+    dataset = MusicNet('/home/hornedheck/PycharmProjects/AI/dataset/music/beethoven/', 100, train=True, fast_load=True)
+    print(dataset)

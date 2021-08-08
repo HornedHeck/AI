@@ -21,7 +21,7 @@ class RNNTrainer(BaseTrainer):
         hc[1].detach()
 
         error.backward()
-        torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.)
+        torch.nn.utils.clip_grad_norm_(self.model.parameters(), 5.)
         self.opt.step()
 
         return error

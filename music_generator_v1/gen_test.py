@@ -7,7 +7,7 @@ from torch import tensor, Tensor
 from music_generator_v1.MRNN import MRNN
 from musicnet import MusicNet
 
-path = '/home/hornedheck/PycharmProjects/AI/models/mrrn_0.000_15_26_18.pt'
+path = '/home/hornedheck/PycharmProjects/AI/models/mrrn_0.120_15_34_35.pt'
 res_path = f'{int(time.time())}.csv'
 note_len = MusicNet.note_len
 

@@ -21,9 +21,11 @@ class BaseTrainer(object):
             safe_model: bool = True,
             log_interval: Optional[int] = None,
             batches: Optional[int] = None,
+            test_batches: Optional[int] = None,
     ) -> None:
         super().__init__()
         self.batches = batches
+        self.test_batches = test_batches
         self.device = device
         self.train_loader = train_loader
         self.test_loader = test_loader
@@ -72,11 +74,13 @@ class BaseTrainer(object):
             for i, (x, y) in enumerate(self.test_loader):
                 r = self.test_batch(x.to(self.device))
                 correct += self.model.is_correct(r, y.to(self.device))
-                if i == 19:
+                if i == self.test_batches:
                     break
 
+        size = self.test_batches if self.test_batches is not None else len(self.test_loader)
+
         # noinspection PyTypeChecker
-        acc = correct / 20 * batch_size
+        acc = correct / size * batch_size
         print(
             f'Epoch: {e + 1} [Assert]\t'
             f'Accuracy: {100. * acc:.2f}%'
