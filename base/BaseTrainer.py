@@ -52,9 +52,9 @@ class BaseTrainer(object):
         self.model.train()
         batch_size = self.train_loader.batch_size
         batches = self.batches if self.batches is not None else len(self.train_loader)
+
         for i, (x, y) in enumerate(self.train_loader):
             error = self.train_batch(x.to(self.device), y.to(self.device))
-
             if (i + 1) % self.log_interval == 0:
                 # noinspection PyTypeChecker
                 print(
@@ -97,5 +97,6 @@ class BaseTrainer(object):
             )
 
     def train(self, epochs: int):
+        print('Start')
         for e in range(epochs):
             self.__epoch__(e)

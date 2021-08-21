@@ -8,6 +8,7 @@
       <excludeFolder url="file://$MODULE_DIR$/dataset/MNIST" />
       <excludeFolder url="file://$MODULE_DIR$/dataset/Anime" />
       <excludeFolder url="file://$MODULE_DIR$/dataset/music" />
+      <excludeFolder url="file://$MODULE_DIR$/dataset/flowers" />
     </content>
     <orderEntry type="jdk" jdkName="Python 3.9 (AI_ti)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
